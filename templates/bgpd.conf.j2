@@ -1,0 +1,54 @@
+hostname {{ inventory_hostname }}
+password {{ password }}
+log syslog
+debug bgp events
+debug bgp updates
+!
+router bgp {{ as_number }}
+ bgp router-id {{ ansible_default_ipv4.address }}
+{% for iface in ansible_facts["interfaces"] %}
+{% if iface != "lo" %}
+{% if iface != ansible_default_ipv4.interface %}
+{% if "ipv4" in hostvars[inventory_hostname]["ansible_facts"][iface].keys() %}
+ network {{ hostvars[inventory_hostname]["ansible_facts"][iface].ipv4.network }}/{{ netmask[hostvars[inventory_hostname]["ansible_facts"][iface].ipv4.netmask] }}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% for host in groups["all"] %}
+{% if host != inventory_hostname %}
+ neighbor {{ hostvars[host].ansible_default_ipv4.address }} remote-as {{ hostvars[host]["as_number"] }}
+ neighbor {{ hostvars[host].ansible_default_ipv4.address }} description {{ hostvars[host].inventory_hostname }}
+ neighbor {{ hostvars[host].ansible_default_ipv4.address }} ebgp-multihop 255
+ neighbor {{ hostvars[host].ansible_default_ipv4.address }} next-hop-self
+ neighbor {{ hostvars[host].ansible_default_ipv4.address }} route-map {{ inventory_hostname }}-map out
+{% endif %}
+{% endfor %}
+ address-family ipv4
+ exit-address-family
+ exit
+!
+access-list all permit any
+!
+ip prefix-list {{ inventory_hostname }}-networks description "Networks for announces here"
+{% for iface in ansible_facts["interfaces"] %}
+{% if iface != "lo" %}
+{% if iface != ansible_default_ipv4.interface %}
+{% if "ipv4" in hostvars[inventory_hostname]["ansible_facts"][iface].keys() %}
+! {{ iface }}
+ip prefix-list {{ inventory_hostname }}-networks seq 10 permit {{ hostvars[inventory_hostname]["ansible_facts"][iface].ipv4.network }}/{{ netmask[hostvars[inventory_hostname]["ansible_facts"][iface].ipv4.netmask] }}
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}
+!
+route-map set-nexthop permit 10
+ match ip address all
+ set ip next-hop {{ ansible_default_ipv4.address }}
+!
+route-map {{ inventory_hostname }}-map permit 10
+ description "Include network for announces"
+ match ip address prefix-list {{ inventory_hostname }}-networks
+!
+line vty
+!

@@ -1,0 +1,28 @@
+---
+# tasks file for egeneralov.quagga
+
+- name: "install : packages"
+  apt:
+    name:
+      - quagga
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: "template : config"
+  template:
+    src: "{{ item }}.conf.j2"
+    dest: "/etc/quagga/{{ item }}.conf"
+  with_items:
+    - zebra
+    - bgpd
+    - vtysh
+  register: tpl_config
+
+- name: "systemd : restart"
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - zebra
+    - bgpd
+  when: tpl_config.changed

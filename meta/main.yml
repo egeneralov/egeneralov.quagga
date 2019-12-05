@@ -1,0 +1,19 @@
+galaxy_info:
+  author: Eduard Generalov <eduard@generalov.net>
+  description: Role for hypervisors/container hosts for mesh-ing it.
+  license: MIT
+  min_ansible_version: 2.4
+  platforms:
+    - name: Debian
+      versions:
+        - wheezy
+        - jessie
+        - stretch
+        - buster
+        - sid
+  galaxy_tags:
+    - quagga
+    - zebra
+    - network
+    - mesh
+dependencies: []

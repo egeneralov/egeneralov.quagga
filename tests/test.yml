@@ -1,0 +1,6 @@
+---
+
+- hosts: all
+  roles:
+#     - egeneralov.disable_ipv6
+    - egeneralov.quagga
